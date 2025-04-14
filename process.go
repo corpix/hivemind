@@ -56,7 +56,7 @@ func (p *process) Running() bool {
 	return p.Process != nil && p.ProcessState == nil
 }
 
-func (p *process) Run() {
+func (p *process) Run() int {
 	p.output.PipeOutput(p)
 	defer p.output.ClosePipe(p)
 
@@ -69,6 +69,7 @@ func (p *process) Run() {
 	} else {
 		p.writeLine([]byte("\033[1mProcess exited\033[0m"))
 	}
+	return p.Cmd.ProcessState.ExitCode()
 }
 
 func (p *process) Interrupt() {

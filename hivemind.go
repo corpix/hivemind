@@ -58,14 +58,14 @@ func newHivemind(conf hivemindConfig) (h *hivemind) {
 	return
 }
 
-func (h *hivemind) runProcess(proc *process) {
+func (h *hivemind) runProcess(proc *process, exitCode chan int) {
 	h.procWg.Add(1)
 
 	go func() {
 		defer h.procWg.Done()
 		defer func() { h.done <- true }()
 
-		proc.Run()
+		exitCode <- proc.Run()
 	}()
 }
 
@@ -97,7 +97,7 @@ func (h *hivemind) waitForExit() {
 	}
 }
 
-func (h *hivemind) Run() {
+func (h *hivemind) Run() int {
 	fmt.Printf("\033]0;%s | hivemind\007", h.title)
 
 	h.done = make(chan bool, len(h.procs))
@@ -105,11 +105,14 @@ func (h *hivemind) Run() {
 	h.interrupted = make(chan os.Signal)
 	signal.Notify(h.interrupted, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
+	exitCodes := make(chan int, len(h.procs))
 	for _, proc := range h.procs {
-		h.runProcess(proc)
+		h.runProcess(proc, exitCodes)
 	}
 
 	go h.waitForExit()
-
 	h.procWg.Wait()
+
+	// note: return first exited process exit code
+	return <-exitCodes
 }

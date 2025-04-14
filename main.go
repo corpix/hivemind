@@ -65,7 +65,10 @@ func main() {
 		conf.Root, err = filepath.Abs(conf.Root)
 		fatalOnErr(err)
 
-		newHivemind(conf).Run()
+		exitCode := newHivemind(conf).Run()
+		if exitCode > 0 {
+			os.Exit(exitCode)
+		}
 
 		return nil
 	}
